@@ -3,6 +3,7 @@ from datetime import datetime
 
 import pandas as pd
 import numpy as np
+from tqdm.notebook import tqdm
 from rectools import Columns
 from rectools.dataset.dataset import Dataset
 
@@ -53,5 +54,23 @@ class PopularModel:
 
         return self
 
-    def recommend():
-        pass
+    def recommend(self,
+                  users_ids: np.ndarray,
+                  k:int,
+                  ) -> pd.DataFrame: 
+
+        user_ids_all, reco_ids_all, scores_all = [], [], []
+
+        for user_id in tqdm(users_ids, desc='Getting recommendations '):
+            reco_ids, scores = self.popularity_data[:, :k]
+            
+            user_ids_all += [user_id] * k
+            reco_ids_all += reco_ids
+            scores_all += scores
+
+        return pd.DataFrame(data={
+            Columns.User : user_ids_all,
+            Columns.Item : reco_ids_all,
+            Columns.Weight : scores_all
+        })
+
