@@ -1,10 +1,12 @@
 from copy import copy
+from operator import index
 import typing as t
 from datetime import datetime
 
 from rectools.dataset import Dataset, Interactions, features
 from rectools.columns import Columns
 import pandas as pd
+import numpy as np
 
 from .popular import PopularModel
 from .enums import MixingStrategy, RatioStrategy
@@ -87,7 +89,29 @@ class PopularInCategory(PopularModel):
 
             self.models[col_num] = cat_model
 
-            
+    def get_num_recs_for_each_category(self, n:int) -> pd.Series:
+        if self.ratio == RatioStrategy.EQUAL:
+            ns_of_cols = self.score_category.index
+            n_recs = pd.Series({n_col: n // self.n_effective_cats for n_col in ns_of_cols})
+            surplus_recs = n - np.sum(n_recs)
+            n_recs.iloc[:surplus_recs] += 1
 
+        elif self.ratio == RatioStrategy.PROPORTIONAL:
+            scores_sum = np.sum(self.cat_scores)
+            n_recs = np.floor(self.cat_scores * n  / scores_sum).astype(np.int32)
+            surplus_recs = n - n_recs.sum()
+            n_recs.iloc[surplus_recs] += 1
 
+            zero_mask = (n_recs == 0)
+            may_be_decreased_mask = (n_recs > 1)
+            num_changing_zeros = np.min(np.sum(may_be_decreased_mask), np.sum(zero_mask))
+
+            if num_changing_zeros > 1:
+                indexes_to_increase = np.arange(len(n_recs))[zero_mask][:num_changing_zeros]
+                indexes_to_decrease = np.arange(len(n_recs))[may_be_decreased_mask][:-num_changing_zeros]
+
+                n_recs.iloc[indexes_to_increase] += 1
+                n_recs.iloc[indexes_to_decrease] -= 1
+
+        return n_recs
             
