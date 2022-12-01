@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from tqdm.notebook import tqdm
 from rectools import Columns
-from rectools.dataset.dataset import Dataset
+from rectools.dataset import Dataset
 
 from .enums import Popularity
 

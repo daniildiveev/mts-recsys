@@ -2,7 +2,7 @@ import typing as t
 
 from scipy.stats import mode
 import numpy as np
-from rectools.dataset.dataset import Dataset
+from rectools.dataset import Dataset
 from rectools.columns import Columns
 
 from .popular import PopularModel
