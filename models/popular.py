@@ -62,8 +62,7 @@ class PopularModel:
         user_ids_all, reco_ids_all, scores_all = [], [], []
 
         for user_id in tqdm(users_ids, desc='Getting recommendations '):
-            reco_ids, scores = self.popularity_data[:, :k]
-            
+            reco_ids, scores = self.popularity_data[:][:k]
             user_ids_all += [user_id] * k
             reco_ids_all += reco_ids
             scores_all += scores
