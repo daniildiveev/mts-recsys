@@ -6,6 +6,7 @@ from rectools.dataset import Dataset, Interactions
 from rectools.columns import Columns
 import pandas as pd
 import numpy as np
+from sklearn.exceptions import NotFittedError
 
 from .popular import PopularModel
 from .enums import MixingStrategy, RatioStrategy
@@ -88,6 +89,8 @@ class PopularInCategory(PopularModel):
 
             self.models[col_num] = cat_model
 
+        self.__fitted = True
+
     def get_num_recs_for_each_category(self, n:int) -> pd.Series:
         if self.ratio == RatioStrategy.EQUAL:
             ns_of_cols = self.score_category.index
@@ -147,7 +150,7 @@ class PopularInCategory(PopularModel):
         )
 
         insufficient_recs = insufficient_recs.groupby(Columns.User).head(n)
-        full_recs = pd.concat([sufficient_mask, insufficient_recs], sort=False)
+        full_recs = pd.concat([sufficient_recs, insufficient_recs], sort=False)
 
         return full_recs
 
@@ -156,6 +159,10 @@ class PopularInCategory(PopularModel):
                   data:Dataset, 
                   n:int, 
                   ) -> pd.DataFrame:
+
+        if not self.__fitted:
+            raise NotFittedError("trying to use an unfitted model")
+
         num_recs = self.get_num_recs_for_each_category(n)
         main, fallback = [], []
 
