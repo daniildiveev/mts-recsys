@@ -1,5 +1,4 @@
 from enum import Enum
-from tkinter import E
 
 class Popularity(Enum):
     N_USERS = "n_users"
