@@ -2,7 +2,7 @@ from copy import copy
 import typing as t
 from datetime import datetime
 
-from rectools.dataset import Dataset, Interactions, features
+from rectools.dataset import Dataset, Interactions
 from rectools.columns import Columns
 import pandas as pd
 import numpy as np
