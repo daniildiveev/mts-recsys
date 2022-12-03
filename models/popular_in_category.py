@@ -150,4 +150,42 @@ class PopularInCategory(PopularModel):
         full_recs = pd.concat([sufficient_mask, insufficient_recs], sort=False)
 
         return full_recs
+
+    def recommend(self,
+                  user_ids:np.ndarray, 
+                  data:Dataset, 
+                  n:int, 
+                  ) -> pd.DataFrame:
+        num_recs = self.get_num_recs_for_each_category(n)
+        main, fallback = [], []
+
+        for priority, num_col in enumerate(num_recs.index):
+            model = self.models[num_col]
+
+            all_users, all_reco, all_scores = model.recommend(
+                user_ids, 
+                data,
+                n,
+            )
             
+            reco_df = pd.DataFrame({
+                Columns.User : all_users, 
+                Columns.Item : all_reco,
+                Columns.Score : all_scores, 
+                "category_priority" : priority
+            })
+
+            reco_df["category_rank"] = reco_df.groupby([Columns.User], sort=False).cumcount()
+            main_mask = reco_df["category_rank"] < num_recs.loc[num_col]
+            main.append(reco_df[main_mask])
+            fallback.append(reco_df[~main_mask])
+
+        full = self.get_full_recs_and_fallback(main, fallback, n, user_ids)
+
+        if self.mixing == MixingStrategy.ROTATE:
+            full["category_rank"] = full.groupby([Columns.User, "category_priority"], sort=False).cumcount()
+            full.sort_values([Columns.User, "category_rank", "category_priority"], inplace=True)
+        elif self.mixing == MixingStrategy.GROUP:
+            full.sort_values([Columns.User,"category_priority", "category_rank"], inplace=True)
+
+        return full
