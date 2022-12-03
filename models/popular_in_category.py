@@ -1,5 +1,4 @@
 from copy import copy
-from operator import index
 import typing as t
 from datetime import datetime
 
@@ -114,4 +113,41 @@ class PopularInCategory(PopularModel):
                 n_recs.iloc[indexes_to_decrease] -= 1
 
         return n_recs
+
+    def get_full_recs_and_fallback(self,
+                                   main_recs:t.List[pd.DataFrame],
+                                   fallback_recs:t.List[pd.DataFrame],
+                                   n: int,
+                                   user_ids: np.ndarray
+                                   ) -> pd.DataFrame:
+        cat_recs = pd.concat(main_recs, sort=False)
+        cat_recs.drop_duplicates(subset=[Columns.User, Columns.Item], inplace=True)
+
+        num_recs_per_user = cat_recs[Columns.User].value_counts()
+        user_w_sufficient = num_recs_per_user[num_recs_per_user < n].index
+
+        user_w_no_recs = np.setdiff1d(user_ids, num_recs_per_user.index)
+        user_w_insufficient = np.union1d(user_w_sufficient, user_w_no_recs)
+
+        sufficient_mask = ~cat_recs[Columns.User].isin(user_w_insufficient)
+        sufficient_recs = cat_recs[sufficient_mask]
+        insufficient_recs = cat_recs[~sufficient_mask].copy()
+        insufficient_recs['is_main_rec'] = True
+
+        extra_recs = pd.concat(fallback_recs, sort=False)
+        extra_recs = copy(extra_recs[extra_recs[Columns.User].isin(user_w_insufficient)])
+        extra_recs['is_main_rec'] = False
+
+        insufficient_recs = pd.concat([insufficient_recs, extra_recs], sort=False)
+        insufficient_recs.drop_duplicates(subset=[Columns.User, Columns.Item], inplace=True)
+
+        insufficient_recs.sort_values(
+            by=[Columns.User, "is_main_rec", "category_rank", "category_priority"],
+            inplace=True
+        )
+
+        insufficient_recs = insufficient_recs.groupby(Columns.User).head(n)
+        full_recs = pd.concat([sufficient_mask, insufficient_recs], sort=False)
+
+        return full_recs
             
