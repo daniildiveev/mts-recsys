@@ -63,13 +63,12 @@ class PopularModel:
 
         for user_id in tqdm(users_ids, desc='Getting recommendations '):
             reco_ids, scores = self.popularity_data[:][:k]
-            user_ids_all += [user_id] * k
-            reco_ids_all += reco_ids
-            scores_all += scores
+            user_ids_all += [user_id] * k 
+            reco_ids_all += list(reco_ids)[:k]
+            scores_all += list(scores)[:k]
 
         return pd.DataFrame(data={
             Columns.User : user_ids_all,
             Columns.Item : reco_ids_all,
             Columns.Weight : scores_all
         })
-
