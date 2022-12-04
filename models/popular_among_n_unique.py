@@ -8,12 +8,12 @@ from rectools.columns import Columns
 from .popular import PopularModel
 
 class PopularAmongNUniqueUsers(PopularModel):
-    def fit(self, data:Dataset) -> 'PopularAmongNUniqueUsers':
+    def fit(self, data:Dataset, n_users:int=1000) -> 'PopularAmongNUniqueUsers':
         interactions = self.cut_data_by_date(data.interactions.df)
         col, agg_func = self.get_params_for_group_by_and_agg(self.popularity_type)
 
         user_item_matrix = data.get_user_item_matrix()
-        top_items = self.get_top_items_covered_users(user_item_matrix)
+        top_items = self.get_top_items_covered_users(user_item_matrix, n_users)
 
         filtered_interactions = interactions[interactions[Columns.Item].isin(top_items)]
 
